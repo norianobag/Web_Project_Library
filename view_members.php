@@ -1,22 +1,39 @@
 <?php
 include 'db_connection.php';
 
-$query = "SELECT transactions.transaction_id, books.title, students.name AS student_name, 
-                 transactions.issue_date, transactions.fine_amount 
-          FROM transactions 
-          JOIN books ON transactions.book_id = books.id 
-          JOIN students ON transactions.student_id = students.student_id 
-          WHERE transactions.status = 'Issued'";
+// Initialize search query
+$search = '';
+$where = '';
 
+// Check if search parameter is present
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $search = mysqli_real_escape_string($conn, $_GET['search']);
+    $where = "WHERE student_id LIKE '%$search%' OR name LIKE '%$search%' OR department LIKE '%$search%'";
+}
+
+// Handle delete action
+if (isset($_GET['delete_id'])) {
+    $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
+    $delete_query = "DELETE FROM students WHERE student_id = '$delete_id'";
+    if (mysqli_query($conn, $delete_query)) {
+        header("Location: view_members.php?success=Student deleted successfully");
+        exit();
+    } else {
+        header("Location: view_members.php?error=Error deleting student");
+        exit();
+    }
+}
+
+$query = "SELECT * FROM students $where";
 $result = mysqli_query($conn, $query);
 ?>
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issued Books</title>
+    <title>Registered Students</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -217,35 +234,18 @@ $result = mysqli_query($conn, $query);
                 display: block;
             }
         }
-        
-        /* Centered Page Title */
-        .page-title {
-            text-align: center;
-            font-size: 24px;
-            margin-top: 20px;
-            color: #333;
-            color: var(--light);
+
+        /* Content Container */
+        .content-container {
+            background: var(--dark-light);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Back to Dashboard Link */
-        .back-link {
-            display: block;
-            width: fit-content;
-            margin: 10px auto;
-            padding: 8px 15px;
-            background-color: var(--primary);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .back-link:hover {
-            background-color: var(--primary-dark);
-        }
-
-        /* Stylish Table */
+        /* Table Styles */
         .styled-table {
             width: 100%;
             border-collapse: collapse;
@@ -272,44 +272,95 @@ $result = mysqli_query($conn, $query);
             background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* Stylish Return Button */
-        .return-btn {
-            background-color: var(--secondary);
+        /* Back Button */
+        .back-btn {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(90deg, var(--secondary), #0d9c6b);
+            text-decoration: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            margin-top: 1.5rem;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(90deg, #0d9c6b, var(--secondary));
+            transform: scale(1.05);
+        }
+
+        /* No Students Message */
+        .no-students {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+        }
+        
+        /* Search Box */
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--dark);
+            color: var(--light);
+            font-size: 16px;
+        }
+        
+        .search-box button {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .search-box button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Delete Button */
+        .delete-btn {
+            background-color: var(--danger);
             color: white;
             border: none;
             padding: 8px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-
-        .return-btn:hover {
-            background-color: #0d9c6b;
+            transition: background-color 0.3s;
         }
         
-        .pdf-btn {
-            display: inline-block;
-            padding: 8px 15px;
-            background-color: #FF5733;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .pdf-btn:hover {
-            background-color: #C70039;
+        .delete-btn:hover {
+            background-color: #dc2626;
         }
         
-        .content-container {
-            background: var(--dark-light);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
+        }
+        
+        .alert-danger {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
     </style>
 </head>
@@ -326,9 +377,9 @@ $result = mysqli_query($conn, $query);
             <li><a href="add_book1.php"><i class="fas fa-plus"></i> Add Book</a></li>
             <li><a href="issue_book1.php"><i class="fas fa-book"></i> Issue Book</a></li>
             <li><a href="view_books.php"><i class="fas fa-book-open"></i> View Books</a></li>
-            <li><a href="view_issued_books.php" class="active"><i class="fas fa-book-reader"></i> Issued Books</a></li>
+            <li><a href="view_issued_books.php"><i class="fas fa-book-reader"></i> Issued Books</a></li>
             <li><a href="add_student1.php"><i class="fas fa-user-plus"></i> Add Student</a></li>
-            <li><a href="view_members.php"><i class="fas fa-users"></i> View Students</a></li>
+            <li><a href="view_members.php" class="active"><i class="fas fa-users"></i> View Students</a></li>
             <li><a href="book_requests.php"><i class="fas fa-clock"></i> Book Requests</a></li>
         </ul>
         
@@ -347,7 +398,7 @@ $result = mysqli_query($conn, $query);
                     <button class="mobile-menu-toggle" id="menuToggle">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <h1>Issued Books</h1>
+                    <h1>Registered Students</h1>
                 </div>
                 <div class="user-profile">
                     <div class="user-avatar">AD</div>
@@ -356,80 +407,66 @@ $result = mysqli_query($conn, $query);
             </header>
             
             <div class="content-container">
-                <h2 class="page-title">📚 Currently Issued Books</h2>
-
-                <table class="styled-table">
-                <tr>
-                    <th>Transaction ID</th>
-                    <th>Book Title</th>
-                    <th>Issued To</th>
-                    <th>Issue Date</th>
-                    <th>Fine (₹)</th>
-                    <th>Action</th>
-                </tr>
-
-                <?php
-                while ($row = mysqli_fetch_assoc($result)) {
-                    echo "<tr id='row_" . $row['transaction_id'] . "'>";
-                    echo "<td>" . $row['transaction_id'] . "</td>";
-                    echo "<td>" . $row['title'] . "</td>";
-                    echo "<td>" . $row['student_name'] . "</td>";
-                    echo "<td>" . $row['issue_date'] . "</td>";
-                    echo "<td>" . ($row['fine_amount'] > 0 ? "₹" . $row['fine_amount'] : "No Fine") . "</td>";
-                    echo "<td>
-                            <button class='return-btn' onclick='returnBook(" . $row['transaction_id'] . ")'>Return</button>
-                          </td>";
-                    echo "</tr>";
-                }
-                ?>
-                </table>
-                <center><a href="generate_pdf.php" class="pdf-btn">📄 Download PDF Report</a></center>
+                <h2 class="text-center mb-4" style="color: var(--primary-light);">📋 Registered Students</h2>
+                
+                <!-- Search Box -->
+                <form method="GET" action="view_members.php" class="search-box">
+                    <input type="text" name="search" placeholder="Search by ID, name or department..." value="<?php echo htmlspecialchars($search); ?>">
+                    <button type="submit"><i class="fas fa-search"></i> Search</button>
+                    <?php if (!empty($search)): ?>
+                        <a href="view_members.php" class="btn btn-secondary">Clear</a>
+                    <?php endif; ?>
+                </form>
+                
+                <!-- Success/Error Messages -->
+                <?php if (isset($_GET['success'])): ?>
+                    <div class="alert alert-success">
+                        <?php echo htmlspecialchars($_GET['success']); ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_GET['error'])): ?>
+                    <div class="alert alert-danger">
+                        <?php echo htmlspecialchars($_GET['error']); ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (mysqli_num_rows($result) > 0): ?>
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['student_id']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['department']); ?></td>
+                                    <td>
+                                        <button class="delete-btn" onclick="confirmDelete('<?php echo $row['student_id']; ?>')">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="no-students">No students found<?php echo !empty($search) ? ' matching your search' : ''; ?>.</p>
+                <?php endif; ?>
+                
             </div>
         </div>
     </div>
 
-    <!-- SweetAlert & jQuery (For AJAX) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-    function returnBook(transactionId) {
-        $.ajax({
-            url: 'return_book.php',
-            type: 'POST',
-            data: { transaction_id: transactionId },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        title: "Success!",
-                        text: response.message + (response.fine > 0 ? " Fine: ₹" + response.fine : ""),
-                        icon: "success",
-                        confirmButtonText: "OK"
-                    }).then(() => {
-                        $("#row_" + transactionId).remove();
-                    });
-                } else {
-                    Swal.fire({
-                        title: "Error!",
-                        text: response.message,
-                        icon: "error",
-                        confirmButtonText: "OK"
-                    });
-                }
-            },
-            error: function(xhr, status, error) {
-                Swal.fire({
-                    title: "Book Return Successfully!",
-                    text: "Successfully returned the book.",
-                    icon: "success",
-                    confirmButtonText: "OK"
-                });
-            }
-        });
-    }
-    
     // Mobile menu toggle
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -444,6 +481,13 @@ $result = mysqli_query($conn, $query);
             sidebar.classList.remove('active');
         }
     });
+    
+    // Confirm before deleting a student
+    function confirmDelete(studentId) {
+        if (confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+            window.location.href = 'view_members.php?delete_id=' + studentId;
+        }
+    }
     </script>
 </body>
 </html>
