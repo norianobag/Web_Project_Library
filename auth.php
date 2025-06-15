@@ -1,37 +1,32 @@
 <?php
-include '../db_connection.php';
 session_start();
+include "db_connection.php"; // This sets $conn
+$error_message = "";
 
 // Login Logic
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
-    if (!empty($_POST["username"]) && !empty($_POST["password"])) {
-        $con = myconn();
-        if ($con) {
-            // Prepared statement to prevent SQL injection
-            $sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-            $stmt = $GLOBALS["conn"]->prepare($sql);
-            
-            // Bind parameters
-            $stmt->bind_param("ss", $_POST["username"], $_POST["password"]);
-            
-            // Execute query
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                $success_message = "Login successful";
-                header("location: home.html");
+if (isset($_POST["username"]) && isset($_POST["password"]) && $_POST["username"] !== "" && $_POST["password"] !== "") {
+    if ($conn) {
+        $username = $_POST["username"];
+        $password = $_POST["password"];
+
+        $sql = "SELECT * FROM students WHERE username='$username'";
+        $result = $conn->query($sql);
+
+        if ($result && $result->num_rows > 0) {
+            $student = $result->fetch_assoc();
+
+            if (password_verify($password, $student['passwords'])) {
+                $_SESSION['student_id'] = $student['id']; // Store student ID
+                header('Location: dashboard.php'); // Redirect to dashboard
                 exit();
             } else {
                 $error_message = "Username or password is incorrect";
             }
-            
-            $stmt->close();
         } else {
-            $error_message = "Database connection failed";
+            $error_message = "Username or password is incorrect";
         }
     } else {
-        $error_message = "Please enter both username and password";
+        $error_message = "Database connection failed";
     }
 }
 
@@ -46,7 +41,7 @@ if (isset($_POST['register'])) {
     if (mysqli_num_rows($check_user) > 0) {
         $register_error = "Username already taken!";
     } else {
-        $query = "INSERT INTO students (name, email, username, password) VALUES ('$name', '$email', '$username', '$password')";
+        $query = "INSERT INTO students (name, email, username, passwords) VALUES ('$name', '$email', '$username', '$password')";
         if (mysqli_query($conn, $query)) {
             $register_success = "Registration successful! You can now log in.";
         } else {
@@ -88,6 +83,7 @@ if (isset($_POST['register'])) {
             border: 2px solid rgba(59, 130, 246, 0.2);
             animation: fadeIn 0.5s ease-in;
             position: relative;
+            margin-top: 50px; /* Added to accommodate the back button */
         }
         h2 {
             color: #3b82f6;
@@ -188,11 +184,39 @@ if (isset($_POST['register'])) {
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Back button styles - Updated to top left */
+        .back-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 10;
+        }
+        .back-button a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .back-button a:hover {
+            background: rgba(59, 130, 246, 0.4);
+            color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        .back-button i {
+            margin-right: 0.3rem;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .auth-container {
                 padding: 2rem 1.5rem;
                 margin: 1rem;
+                margin-top: 70px; /* Increased for mobile */
             }
             h2 {
                 font-size: 1.5rem;
@@ -205,11 +229,16 @@ if (isset($_POST['register'])) {
                 padding: 0.6rem 1.5rem;
                 font-size: 1rem;
             }
+            .back-button {
+                top: 0.5rem;
+                left: 0.5rem;
+            }
         }
         @media (max-width: 480px) {
             .auth-container {
                 padding: 1.5rem 1rem;
                 margin: 0.5rem;
+                margin-top: 60px; /* Increased for smaller mobile */
             }
             h2 {
                 font-size: 1.2rem;
@@ -222,14 +251,22 @@ if (isset($_POST['register'])) {
                 padding: 0.5rem 1.2rem;
                 font-size: 0.9rem;
             }
+            .back-button a {
+                padding: 0.3rem 0.8rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="back-button">
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+    
     <div class="auth-container">
         <!-- Login Form -->
         <div class="form-box <?php echo (!isset($_POST['register']) || isset($login_error)) ? 'active' : ''; ?>" id="login">
-            <h2><i class="fas fa-sign-in-alt"></i> Login</h2>
+            <h2><i class="fas fa-sign-in-alt"></i>Student Login</h2>
             <?php if (isset($login_error)) { echo "<p class='error'>$login_error</p>"; } ?>
             <form method="POST">
                 <div class="form-group">
@@ -256,7 +293,7 @@ if (isset($_POST['register'])) {
             ?>
             <form method="POST">
                 <div class="form-group">
-                    <label for="name" class="form-label">Name</label>
+                    <label for="name" class="form-label">Full Name</label>
                     <input type="text" name="name" id="name" class="form-control" required>
                 </div>
                 <div class="form-group">

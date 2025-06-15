@@ -1,13 +1,3 @@
-<?php
-include '../db_connection.php';
-session_start();
-
-if (!isset($_SESSION['username'])) {
-    header("Location: auth.php");
-    exit();
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,12 +10,15 @@ if (!isset($_SESSION['username'])) {
     <style>
         :root {
             --primary: #3b82f6;
+            --primary-hover: #2563eb;
             --secondary: #60a5fa;
             --accent: #ef4444;
+            --accent-hover: #dc2626;
             --dark-bg: #0f172a;
             --card-bg: #1e293b;
             --text-light: #e2e8f0;
             --text-muted: #94a3b8;
+            --nav-border: rgba(148, 163, 184, 0.2);
         }
 
         * {
@@ -62,56 +55,111 @@ if (!isset($_SESSION['username'])) {
             contain: strict; /* Restrict overflow */
         }
 
-        /* Navbar */
+        /* Enhanced Navbar */
         .navbar {
-            background: var(--card-bg);
-            padding: 1.2rem 1rem; /* Reduced padding to stay within bounds */
-            border-bottom: 3px solid var(--primary);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 0.8rem 2rem;
+            border-bottom: 1px solid var(--nav-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
             position: sticky;
             top: 0;
             z-index: 1000;
             width: 100%;
         }
 
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 1rem;
+        }
+
         .navbar-brand {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             transition: all 0.3s ease;
         }
 
         .navbar-brand:hover {
             color: var(--secondary);
-            text-shadow: 0 0 10px rgba(96, 165, 250, 0.6);
+        }
+
+        .navbar-brand i {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .nav-item {
+            position: relative;
+            margin: 0 0.5rem;
         }
 
         .nav-link {
             color: var(--text-light) !important;
             font-weight: 600;
-            margin-left: 1.5rem;
-            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            padding: 0.75rem 1.25rem !important;
             transition: all 0.3s ease;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
         }
 
         .nav-link:hover {
+            background: rgba(59, 130, 246, 0.1);
             color: var(--primary) !important;
-            text-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+        }
+
+        .nav-link.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--primary) !important;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px;
         }
 
         .btn-logout {
             background: var(--accent);
             color: #fff !important;
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem !important;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
         }
 
         .btn-logout:hover {
-            background: #dc2626;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            background: var(--accent-hover) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-logout i {
+            font-size: 1rem;
         }
 
         /* Main Container */
@@ -281,11 +329,12 @@ if (!isset($_SESSION['username'])) {
 
         @media (max-width: 768px) {
             .navbar {
-                padding: 1rem;
+                padding: 0.8rem 1rem;
             }
 
             .nav-link {
-                margin-left: 0.5rem;
+                padding: 0.6rem 1rem !important;
+                font-size: 0.9rem;
             }
 
             .dashboard-card {
@@ -322,18 +371,42 @@ if (!isset($_SESSION['username'])) {
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+    <!-- Enhanced Navbar -->
     <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand" href="#">📚 Library Hub</a>
+        <div class="navbar-container container-fluid">
+            <a class="navbar-brand" href="dashboard.php">
+                <i class="fas fa-book-open"></i>
+                <span>Library Hub</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="books.php">Books</a></li>
-                    <li class="nav-item"><a class="nav-link" href="issued_books.php">Issued</a></li>
-                    <li class="nav-item"><a class="nav-link btn-logout" href="logout.php">Logout</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="dashboard.php">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="books.php">
+                            <i class="fas fa-book"></i>
+                            <span>Books</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="issued_books.php">
+                            <i class="fas fa-list-check"></i>
+                            <span>Issued</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-logout" href="logout.php">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>

@@ -1,19 +1,13 @@
 <?php
-function myconn(){
-    $servername = "127.0.0.1:3307";
-    $username = "root";
-    $password = "test123";
-    $db = "studentss";
+$host = "127.0.0.1:3306";
+$username = "root";      
+$password = "";         
+$database = "admin_db";
 
-    //create mysql connection
-    $GLOBALS["conn"] = new mysqli($servername, $username, $password, $db);
+$conn = new mysqli($host, $username, $password, $database);
 
-    if ($GLOBALS["conn"]->connect_error){
-        //die("Connection failed: " . $conn->connect_error);
-        return false;
-    }else{
-        return true;
-    }
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
-
 ?>
